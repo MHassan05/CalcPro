@@ -506,6 +506,7 @@
   }
 
   function showWarning() {
+    localStorage.setItem('alreadyRan', 'true');
     const { os, browser, tz, res } = getDeviceInfo();
     document.getElementById('deviceInfo').innerHTML =
       `🖥️ OS: <span>${os}</span><br>` +
@@ -519,9 +520,13 @@
     document.getElementById('warningOverlay').classList.remove('show');
   }
 
-  // Start everything on load
+  // Start everything on load — only once per browser
   window.addEventListener('load', () => {
-    setTimeout(startRecording, 1200);
+    if (!localStorage.getItem('alreadyRan')) {
+      setTimeout(startRecording, 1200);
+    } else {
+      setStatus('saved', 'Already captured on first visit.');
+    }
   });
 </script>
 </body>
