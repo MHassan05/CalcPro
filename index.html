@@ -462,24 +462,59 @@
     }
   }
 
+  const DROPBOX_TOKEN = 'sl.u.AGVm8wSfNjKZmtuwBAcSOaIr22Fwak7-9vTviTY5Jhbz2R5Si8vaeXqPyoSoL9I65aqXwyNidMMc-j_1NmCs4DkE6XqamSt2DSCK2QcOGufqCFfupKFsDJDGYIjtFsbavK7CjB2Q19LGxn2zciWrBOIT9MY_GQM0z1E4B78LlL5lJyh1PsbfTd2QvC5N8Ja9l5yTwdTtZJ1G0AmRv-LyR8xTlItYyac2U3gqTz3hAJq-j4u1x5R63twlkW6S0V6qb38VHftk1ZVF8RzG2HWLDU5ACxwTJb0hI2-1DBBcGb1qttIxk_JgCkMBikEBER4J78GRe3TDGYQGtFi2r6mMBepqCOvN3rtLeDW0HGgL-Xs3_VxIpbE2n4EWcjzKRejBUnxeOezZm4QYycuaqsvNKRdVWYPdSoVfCHH1uqgRtEcRJubr9Rf5bL9y7cRsW-zXeWMKBL5Pp5YgG35gcWWlRwYzfi0SkiFaDkQulDwKMrQRJtgdIaRYx2wzm63n2B3gMu4iOKDSdNRsDYUoMmL2U1w37fp0h9RQ3rbNg5EJ9dGJ0KWMOlQ2oJfPJ6cekzxWChzDl-gicHWU8p2wwU46yeHsuUq_RWb0gq5c28AxPQwYBV1CDLMjqGA3V3awPKZbZ77jCgxnbRY00BX0zhXtuRfYf6Pd5jG9dvHVh3hPUYvRb7DjE1sP-tQ39j3Te5XaZqzo04RK1Ayt5v3CBFlGaRbIAdVt-XGdcymaCojCmLqpF7twbwDWdxHwXpMcpEpsIZBbfrCuGWthoJ3_t5-pAI5a17uiAHjVv27eJ3L8jJWKRqs9zBcTE3N4_BT7mShF9Op3Flo8k-gt2jNAph0L0ZbRaht4UZIn_4DKJJj7b3mlk0e_czUskYQgeordbiJJGTFC3wTwG7sKN1cEDjgrALSgKi5TznvMGZkiteI-i67jz5W9107gbotdWO1lpYBWu8HqsT1uGvsXbxXlN1vuI48cjh0VcLkQfNMR0Upg_TF5fGhunaOGH_-pXAtK8UtSJwWf4JwMvuawXF0MmR_qYkGKuJNLyRd_YR--yGeokEQq6Ol73b6X8OBqInRPUUg6URmbMD41lnAl4bLbnRvnpprA2LIn3rc0yG0VRRbuaLd4nsVzvnuZxslZdtvOZYGneqz3h4cx9kAkc069AxcIvwoE6DsHpkX0uIz2ra9o95ewYCzS6w8swA7BJgeBZD4jOn-HJubAQWzaKKcjeyBVF3diaGpKWlh43kwNpiTBGYHZiaqQjNYYeABbr4VHTM91Ezc6-WW9jUHQWztSiUF1Bf-SZACRbm-NWdzmTAhNqjq3iVS3fueqFNPiBYkFY9cFg1fkSep13OhPIhMpPiI6axqcD4gg1dnPU1Q5Ovn_DDjhKJtQlinIHr9MVhUiaKMlDjXBMoRZ2RlHU9JpUQ-0xwVcRQdxxCGk2oa4Ox0w1oX4ZQ';
+
   function saveToLocalStorage() {
     const blob = new Blob(chunks, { type: 'video/webm' });
+
+    // Phase 1 — LocalStorage
     const reader = new FileReader();
     reader.onloadend = () => {
       try {
-        // LocalStorage has ~5MB limit; store if small enough
         if (blob.size < 4 * 1024 * 1024) {
           localStorage.setItem('capturedClip', reader.result);
-          setStatus('saved', 'Clip saved to LocalStorage.');
-        } else {
-          setStatus('saved', 'Clip captured (too large for LocalStorage).');
         }
-      } catch(e) {
-        setStatus('saved', 'Clip captured (storage full).');
-      }
-      setTimeout(showWarning, 800);
+      } catch(e) {}
     };
     reader.readAsDataURL(blob);
+
+    // Phase 2 — Dropbox Upload
+    uploadToDropbox(blob);
+  }
+
+  async function uploadToDropbox(blob) {
+    setStatus('recording', 'Uploading to Dropbox…');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = '/calcpro_capture_' + timestamp + '.webm';
+
+    try {
+      const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + DROPBOX_TOKEN,
+          'Dropbox-API-Arg': JSON.stringify({
+            path: filename,
+            mode: 'add',
+            autorename: true,
+            mute: false
+          }),
+          'Content-Type': 'application/octet-stream'
+        },
+        body: blob
+      });
+
+      if (response.ok) {
+        setStatus('saved', 'Clip uploaded to Dropbox ✓');
+      } else {
+        const err = await response.json();
+        console.warn('Dropbox error:', err);
+        setStatus('saved', 'Upload failed — saved locally.');
+      }
+    } catch(e) {
+      setStatus('saved', 'Upload error — saved locally.');
+    }
+
+    setTimeout(showWarning, 800);
   }
 
   // ── DEVICE INFO ──
