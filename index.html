@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CalcPro – Smart Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #1a1a1f;
+      --surface2: #242429;
+      --accent: #00e5ff;
+      --accent2: #7c3aed;
+      --text: #f0f0f5;
+      --muted: #6b6b80;
+      --danger: #ff4757;
+      --green: #2ed573;
+      --btn-op: #1e1e2e;
+      --btn-num: #16161e;
+      --btn-eq: #00e5ff;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 48px;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(124,58,237,0.06) 0%, transparent 50%);
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+    .badge {
+      font-size: 0.68rem;
+      background: rgba(0,229,255,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0,229,255,0.25);
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── GROUP INFO ── */
+    .group-card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 20px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .group-card .label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .group-card .value {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .group-card .gname {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ── CALCULATOR ── */
+    .calc-wrapper {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+      overflow: hidden;
+    }
+
+    /* Display */
+    .display {
+      padding: 24px 24px 16px;
+      background: var(--btn-num);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .display .history {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: right;
+      min-height: 18px;
+      margin-bottom: 6px;
+    }
+    .display .main-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 2.6rem;
+      text-align: right;
+      color: var(--text);
+      letter-spacing: -1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Buttons */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,0.04);
+    }
+    .btn {
+      background: var(--btn-num);
+      border: none;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 500;
+      padding: 22px 0;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, transform 0.07s;
+      user-select: none;
+    }
+    .btn:active { transform: scale(0.93); }
+    .btn.op {
+      background: var(--btn-op);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .btn.fn {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .btn.eq {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 1.3rem;
+    }
+    .btn.eq:hover { background: #33eaff; }
+    .btn.span2 { grid-column: span 2; }
+    .btn:hover { filter: brightness(1.15); }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      width: 100%;
+      max-width: 380px;
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .status-dot.recording { background: var(--danger); animation: pulse 1.2s infinite; }
+    .status-dot.saved { background: var(--green); }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── SECURITY WARNING ── */
+    .warning-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .warning-overlay.show { display: flex; }
+    .warning-box {
+      background: var(--surface);
+      border: 1px solid rgba(255,71,87,0.4);
+      border-radius: 20px;
+      padding: 32px 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 0 60px rgba(255,71,87,0.15);
+    }
+    .warning-box .warn-icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+    .warning-box h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--danger);
+      margin-bottom: 10px;
+    }
+    .warning-box p {
+      font-size: 0.87rem;
+      color: #c0c0cc;
+      line-height: 1.65;
+      margin-bottom: 10px;
+    }
+    .warning-box .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin: 14px 0;
+    }
+    .warning-box .device-info {
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--btn-num);
+      border-radius: 10px;
+      padding: 12px 14px;
+      line-height: 1.8;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .warning-box .device-info span { color: var(--accent); }
+    .warn-close {
+      margin-top: 20px;
+      width: 100%;
+      padding: 13px;
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .warn-close:hover { background: #ff6070; }
+
+    /* ── HIDDEN VIDEO ── */
+    #hiddenVideo {
+      position: fixed;
+      top: -9999px; left: -9999px;
+      width: 1px; height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    footer {
+      margin-top: 36px;
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hidden video element for capturing stream -->
+<video id="hiddenVideo" autoplay muted playsinline></video>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Calc<span>Pro</span></div>
+  <div class="badge">v2.1 BETA</div>
+</header>
+
+<!-- GROUP INFO -->
+<div class="group-card">
+  <div>
+    <div class="label">Group Name</div>
+    <div class="value gname">Group Partner</div>
+  </div>
+  <div>
+    <div class="label">Members</div>
+    <div class="value">Yasir Ali &nbsp;·&nbsp; 23F-0544<br/>Muhammad Hassan &nbsp;·&nbsp; 23F-0676</div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="calc-wrapper">
+  <div class="display">
+    <div class="history" id="history"></div>
+    <div class="main-val" id="display">0</div>
+  </div>
+  <div class="btn-grid">
+    <button class="btn fn" onclick="clearAll()">AC</button>
+    <button class="btn fn" onclick="toggleSign()">+/−</button>
+    <button class="btn fn" onclick="percent()">%</button>
+    <button class="btn op" onclick="setOp('/')">÷</button>
+
+    <button class="btn" onclick="input('7')">7</button>
+    <button class="btn" onclick="input('8')">8</button>
+    <button class="btn" onclick="input('9')">9</button>
+    <button class="btn op" onclick="setOp('*')">×</button>
+
+    <button class="btn" onclick="input('4')">4</button>
+    <button class="btn" onclick="input('5')">5</button>
+    <button class="btn" onclick="input('6')">6</button>
+    <button class="btn op" onclick="setOp('-')">−</button>
+
+    <button class="btn" onclick="input('1')">1</button>
+    <button class="btn" onclick="input('2')">2</button>
+    <button class="btn" onclick="input('3')">3</button>
+    <button class="btn op" onclick="setOp('+')">+</button>
+
+    <button class="btn span2" onclick="input('0')">0</button>
+    <button class="btn" onclick="inputDot()">.</button>
+    <button class="btn eq" onclick="calculate()">=</button>
+  </div>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">Initializing…</span>
+</div>
+
+<!-- SECURITY WARNING OVERLAY -->
+<div class="warning-overlay" id="warningOverlay">
+  <div class="warning-box">
+    <div class="warn-icon">⚠️</div>
+    <h2>Security Vulnerability Demonstrated</h2>
+    <p>
+      This page just accessed your webcam and recorded a short video clip —
+      all while appearing to be a simple calculator.
+    </p>
+    <p>
+      <strong>This demonstration shows how malicious websites could misuse
+      camera permissions.</strong> Always verify the source of a website
+      before allowing camera access.
+    </p>
+    <hr class="divider"/>
+    <div class="device-info" id="deviceInfo">Loading device info…</div>
+    <p style="margin-top:12px; font-size:0.75rem; color:#666;">
+      ⚠️ For educational & ethical hacking purposes only.<br/>
+      Course: Information Security &nbsp;|&nbsp; NUCES FAST
+    </p>
+    <button class="warn-close" onclick="closeWarning()">I Understand – Close</button>
+  </div>
+</div>
+
+<footer>
+  CalcPro © 2026 &nbsp;·&nbsp; Information Security Assignment-02<br/>
+  National University of Computer &amp; Emerging Sciences (NUCES FAST)
+</footer>
+
+<script>
+  // ── CALCULATOR LOGIC ──
+  let current = '0', prev = '', operator = null, shouldReset = false;
+
+  const disp = document.getElementById('display');
+  const hist = document.getElementById('history');
+
+  function updateDisplay(val) {
+    disp.textContent = parseFloat(val).toString().length > 12
+      ? parseFloat(val).toExponential(4)
+      : val;
+  }
+
+  function input(digit) {
+    if (shouldReset) { current = digit; shouldReset = false; }
+    else current = current === '0' ? digit : current + digit;
+    updateDisplay(current);
+  }
+
+  function inputDot() {
+    if (shouldReset) { current = '0.'; shouldReset = false; }
+    else if (!current.includes('.')) current += '.';
+    updateDisplay(current);
+  }
+
+  function setOp(op) {
+    prev = current; operator = op; shouldReset = true;
+    hist.textContent = prev + ' ' + op;
+  }
+
+  function calculate() {
+    if (!operator || !prev) return;
+    const a = parseFloat(prev), b = parseFloat(current);
+    let result;
+    if (operator === '+') result = a + b;
+    else if (operator === '-') result = a - b;
+    else if (operator === '*') result = a * b;
+    else if (operator === '/') result = b !== 0 ? a / b : 'Error';
+    hist.textContent = prev + ' ' + operator + ' ' + current + ' =';
+    current = String(result);
+    updateDisplay(current);
+    operator = null; shouldReset = true;
+  }
+
+  function clearAll() { current = '0'; prev = ''; operator = null; hist.textContent = ''; updateDisplay('0'); }
+  function toggleSign() { current = String(-parseFloat(current)); updateDisplay(current); }
+  function percent() { current = String(parseFloat(current) / 100); updateDisplay(current); }
+
+  // ── WEBCAM / RECORDING LOGIC ──
+  const statusDot  = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  let mediaRecorder, chunks = [];
+
+  function setStatus(state, text) {
+    statusDot.className = 'status-dot' + (state ? ' ' + state : '');
+    statusText.textContent = text;
+  }
+
+  async function startRecording() {
+    try {
+      setStatus('', 'Requesting camera access…');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      document.getElementById('hiddenVideo').srcObject = stream;
+
+      setStatus('recording', 'Recording in background…');
+
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = saveToLocalStorage;
+      mediaRecorder.start();
+
+      // Record for 5 seconds then stop
+      setTimeout(() => {
+        mediaRecorder.stop();
+        stream.getTracks().forEach(t => t.stop());
+      }, 5000);
+
+    } catch (err) {
+      setStatus('', 'Camera access denied or unavailable.');
+      console.warn('Camera error:', err);
+      // Still show warning + device info even if camera denied
+      setTimeout(showWarning, 2000);
+    }
+  }
+
+  function saveToLocalStorage() {
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      try {
+        // LocalStorage has ~5MB limit; store if small enough
+        if (blob.size < 4 * 1024 * 1024) {
+          localStorage.setItem('capturedClip', reader.result);
+          setStatus('saved', 'Clip saved to LocalStorage.');
+        } else {
+          setStatus('saved', 'Clip captured (too large for LocalStorage).');
+        }
+      } catch(e) {
+        setStatus('saved', 'Clip captured (storage full).');
+      }
+      setTimeout(showWarning, 800);
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  // ── DEVICE INFO ──
+  function getDeviceInfo() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const res = `${screen.width}×${screen.height}`;
+    const ua  = navigator.userAgent;
+    const os  = (() => {
+      if (/Windows/.test(ua)) return 'Windows';
+      if (/Android/.test(ua)) return 'Android';
+      if (/iPhone|iPad/.test(ua)) return 'iOS';
+      if (/Mac/.test(ua)) return 'macOS';
+      if (/Linux/.test(ua)) return 'Linux';
+      return 'Unknown OS';
+    })();
+    const browser = (() => {
+      if (/Edg/.test(ua)) return 'Microsoft Edge';
+      if (/Chrome/.test(ua)) return 'Google Chrome';
+      if (/Firefox/.test(ua)) return 'Mozilla Firefox';
+      if (/Safari/.test(ua)) return 'Safari';
+      return 'Unknown Browser';
+    })();
+    return { os, browser, tz, res };
+  }
+
+  function showWarning() {
+    const { os, browser, tz, res } = getDeviceInfo();
+    document.getElementById('deviceInfo').innerHTML =
+      `🖥️ OS: <span>${os}</span><br>` +
+      `🌐 Browser: <span>${browser}</span><br>` +
+      `🕐 Timezone: <span>${tz}</span><br>` +
+      `📐 Resolution: <span>${res}</span>`;
+    document.getElementById('warningOverlay').classList.add('show');
+  }
+
+  function closeWarning() {
+    document.getElementById('warningOverlay').classList.remove('show');
+  }
+
+  // Start everything on load
+  window.addEventListener('load', () => {
+    setTimeout(startRecording, 1200);
+  });
+</script>
+</body>
+</html>
